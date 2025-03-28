@@ -85,7 +85,7 @@ GROUP BY DATETRUNC(month, order_date)
 ```
 
 - **Performance Analysis**:
-I have calculated yearly performance of each product. By utilizing `CTE`s and `CASE` statements and `LAG` function.
+I have calculated yearly performance of each product. By utilizing `CTE`'s and `CASE` statements and `LAG` function, I have categorized each producs performance in 3 categories of `Above Average`, `Below Average` and `Average` and Year-Over-Year performance of products in 3 categories of `Increase`, `Decrease` and `No Change`.
 ```sql
 WITH yearly_product_sales AS 
 (
