@@ -50,7 +50,8 @@ products table:
 Various SQL functionalities were utilized to extract valuable insights through the analysis stages. 
 
 ### 1. **Change Over time**
-In calculating change over time, I hve used DATETRUNK 
+In calculating change over time, I hve used `DATETRUNK` function to extract month from date column. Then by utilizing `SUM` and `COUNT` I did some aggregation to  calculate `Total_sales`, `Total_customer` and `Total quantity` over each months of sale. 
+Usage of `WHERE`, `GROUP BY` and `ORDER BY` statements has been shown.
 ```sql
 select
 	DATETRUNC(month, order_date) AS 'Order_date',
@@ -63,16 +64,64 @@ group by DATETRUNC(month, order_date)
 order by DATETRUNC(month, order_date);
 ```
 
+### 2. **Cummulative Analysis**
+Calculate total sales per month, running total (rolling total) and moving average over time. Used `SubQuery` fanctionality of SQL to achieve the results.
+```sql
+SELECT 
+	order_date,
+	total_sales,
+	SUM(total_sales) OVER (ORDER BY order_date) AS rolling_total,
+	AVG(avg_price) OVER(ORDER BY order_date) AS moving_avg_price
+FROM
+(
+SELECT 
+	DATETRUNC(month, order_date) AS order_date,
+	SUM(sales_amount) AS total_sales,
+	AVG(price) AS avg_price
+FROM [gold.fact_sales]
+WHERE order_date IS NOT NULL
+GROUP BY DATETRUNC(month, order_date)
+) t
+```
 
-### 2. **Top Layoff Events and Patterns**
-- **Top 5 Countries with the Highest Layoffs**:
-   - Used `LIMIT 5` after `ORDER BY SUM(total_layoffs) DESC`.
-
-- **Top 5 Industries with the Highest Layoffs**:
-   - Similar to country analysis but grouped by `industry`.
+- **Performance Analysis**:
+I have calculated yearly performance of each product. By utilizing `CTE`s and `CASE` statements and `LAG` function.
+```sql
+WITH yearly_product_sales AS 
+(
+SELECT
+	prod.product_name,
+	SUM(fact.sales_amount) AS total_sales,
+	YEAR(fact.order_date) AS order_year
+FROM [gold.fact_sales] AS fact
+JOIN [gold.dim_products] AS prod
+	on fact.product_key = prod.product_key
+WHERE fact.order_date IS NOT NULL
+GROUP BY YEAR(fact.order_date), prod.product_name
+)
+SELECT 
+	order_year,
+	product_name,
+	total_sales,
+	AVG(total_sales) OVER(PARTITION BY product_name) AS average_sales,
+	total_sales - AVG(total_sales) OVER(PARTITION BY product_name) AS diff_average,
+	CASE 
+		WHEN total_sales - AVG(total_sales) OVER(PARTITION BY product_name) > 0 THEN 'Above Average'
+		WHEN total_sales - AVG(total_sales) OVER(PARTITION BY product_name) < 0 THEN 'Below Average'
+		ELSE 'Average'
+	END Average_Change,
+	LAG(total_sales) OVER (PARTITION BY product_name ORDER BY order_year) AS p_y_sales,
+	total_sales - LAG(total_sales) OVER (PARTITION BY product_name ORDER BY order_year) AS diff_p_y,
+	CASE 
+		WHEN total_sales - LAG(total_sales) OVER (PARTITION BY product_name ORDER BY order_year) > 0 THEN 'Increase'
+		WHEN total_sales - LAG(total_sales) OVER (PARTITION BY product_name ORDER BY order_year) < 0 THEN 'Decrease'
+		ELSE 'No Change'
+	END y_over_y
+FROM yearly_product_sales
+```
 
 - **Top 5 Months with the Highest Layoffs**:
-   - Applied `ORDER BY` on aggregated monthly layoffs.
+I have calculated yearly performance of each product in this analysis.
 
 - **Biggest Layoff Events**:
    - Used `ORDER BY total_layoffs DESC` to identify the largest single layoff events.
