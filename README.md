@@ -358,7 +358,8 @@ FROM new_table2
 SQL techniques such as CTEs, JOINs, CASE statements, window functions (OVER(), LAG()), and subqueries were extensively applied throughout the analysis to manipulate and aggregate the data effectively. The insights derived from these methods provide significant value in optimizing product offerings, refining marketing strategies, and enhancing customer engagement. This project demonstrates the power of SQL and data-driven decision-making in the retail industry, enabling more informed and strategic business actions.
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under MIT License - see the LICENSE file for details.
+
 ---
 For any questions or collaborations, feel free to reach out!
 
