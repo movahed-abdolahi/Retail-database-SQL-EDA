@@ -120,11 +120,27 @@ SELECT
 FROM yearly_product_sales
 ```
 
-- **Top 5 Months with the Highest Layoffs**:
-I have calculated yearly performance of each product in this analysis.
-
-- **Biggest Layoff Events**:
-   - Used `ORDER BY total_layoffs DESC` to identify the largest single layoff events.
+- **Part to whole**:
+This was another interesting part of the analysis in which I calculated sale contribution of each product category compared to total sale. This Types of analysis usualy is good to identify dominant categories as well as underperforming categories.
+```sql
+WITH total_sales_category AS
+(
+SELECT
+	category,
+	SUM(sales_amount) AS total_sales_cat
+FROM [gold.fact_sales] AS f
+JOIN [gold.dim_products] AS p
+	ON f.product_key = p.product_key
+GROUP BY category
+)
+SELECT 
+	category,
+	total_sales_cat,
+	SUM(total_sales_cat) OVER () AS overall_sales,
+	CONCAT(ROUND((CAST (total_sales_cat AS FLOAT) / SUM(total_sales_cat) OVER ()) * 100, 2), '%') AS contribution_percentage
+FROM total_sales_category
+ORDER BY total_sales_cat DESC
+```
 
 ### 3. **SQL Techniques and Functionalities Used**
 During the data cleaning and analysis process, multiple SQL functionalities were applied, including:
