@@ -204,36 +204,161 @@ FROM product_category
 GROUP BY cost_category
 ```
 
-## Key Insights and Findings
-After analyzing the dataset, several important trends were uncovered:
+### 6. **Final query**
+In final stage of the analysis, I have created 2 complex queries which one creating a complete repost for `Customer Analysis` and second one for `Products Analysis`. In this step I have utilzed `CREATE VIEW` statement to create a report table. Multiple agrregations, text anlyzing and `CTE`'s has been used.
 
-A
+`Customer Analysis`:
+```sql
+CREATE VIEW final_report_customers AS
+WITH new_table AS
+--First CTE to extract what we need
+(
+SELECT 
+	f.order_number,
+	f.product_key,
+	f.order_date,
+	f.sales_amount,
+	f.quantity,
+	c.customer_key,
+	c.customer_number,
+	CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+	DATEDIFF(year, c.birthdate, GETDATE()) AS age
+FROM [gold.fact_sales] as f
+JOIN [gold.dim_customers] as c
+	ON f.customer_key = c.customer_key
+WHERE order_date IS NOT NULL AND c.birthdate IS NOT NULL
+)
+, new_table2 AS
+-- Second query to categorize customers
+(
+SELECT 
+	customer_key,
+	customer_name,
+	customer_number,
+	COUNT(DISTINCT order_number) AS total_orders,
+	SUM(sales_amount) AS total_sales,
+	COUNT(quantity) AS total_quantity,
+	COUNT(product_key) AS total_products,
+	DATEDIFF(MONTH, MIN(order_date), MAX(order_date)) AS lifespan_months,
+	MAX(order_date) AS last_order_date,
+	age
+FROM new_table
+GROUP BY 	
+	customer_key,
+	customer_name,
+	customer_number,
+	age
+)
+SELECT 
+	customer_key,
+	customer_name,
+	customer_number,
+	age,
+	CASE	
+		WHEN age <= 30 THEN 'Under 30'
+		WHEN age BETWEEN 30 AND 40 THEN '30 to 40'
+		WHEN age BETWEEN 40 AND 50 THEN '40 to 50'
+		ELSE 'Over 50'
+	END age_group,
+	CASE	
+		WHEN lifespan_months >= 12 AND total_sales > 5000 THEN 'VIP'
+		WHEN lifespan_months >= 12 AND total_sales <= 5000 THEN 'Regular'
+		ELSE 'New'
+	END customer_category,
+	DATEDIFF(MONTH, last_order_date, GETDATE()) AS 'recency', 
+	CASE
+		WHEN total_orders = 0 THEN 0
+		ELSE (total_sales/total_orders)
+	END 'avg_order',
+	CASE
+		WHEN lifespan_months = 0 THEN total_sales
+		ELSE (total_sales/lifespan_months)
+	END 'avg_monthly_spend'
 
-- **Layoffs peaked in 2020 and 2022**, aligning with major economic downturns and market corrections.
-- **The tech industry was the most affected**, with large layoffs in major companies.
-- **Countries like the USA, India, and the UK saw the highest number of layoffs**, primarily due to global market shifts and restructuring.
-- **Certain months (e.g., January 2023) had exceptionally high layoffs**, possibly due to financial planning and restructuring.
-- **The largest single layoff events were observed in major multinational companies**, particularly in the technology sector.
+FROM new_table2
+```
+
+`Products Analysis`:
+```sql
+CREATE VIEW final_report_products AS
+WITH new_table AS
+(
+Select
+	f.order_number,
+	f.order_date,
+	f.customer_key,
+	f.sales_amount,
+	f.quantity,
+	p.product_key,
+	p.product_name,
+	p.category,
+	p.subcategory,
+	p.cost
+FROM [gold.fact_sales] as f
+JOIN [gold.dim_products] as p
+	ON f.product_key = p.product_key
+WHERE order_date IS NOT NULL 
+), new_table2 AS
+(
+SELECT 
+	product_key,
+	product_name,
+	category,
+	subcategory,
+	cost,
+	DATEDIFF(MONTH, MIN(order_date), MAX(order_date)) AS lifespan,
+	MAX(order_date) AS
+	last_sale_date,
+	COUNT(DISTINCT order_number) AS total_orders,
+	COUNT(DISTINCT customer_key) AS total_customers,
+	SUM(sales_amount) AS total_sales,
+	SUM(quantity) AS total_sold,
+	ROUND(AVG(CAST(sales_amount AS FLOAT) / NULLIF(quantity, 0)),1) AS avg_selling_price
+FROM new_table
+GROUP BY 
+	product_key,
+	product_name,
+	category,
+	subcategory,
+	cost
+)
+SELECT 
+	product_key,
+	product_name,
+	category,	
+	subcategory,	
+	cost,
+	last_sale_date,
+	DATEDIFF(MONTH, last_sale_date, GETDATE()) AS recency_in_months,
+	CASE	
+		WHEN total_sales > 50000 THEN 'High Performer'
+		WHEN total_sales >= 20000 THEN 'Mid Performer'
+		ELSE 'Low performer'
+	END AS product_category,
+	lifespan,
+	total_orders,
+	total_sales,
+	total_sold,
+	total_customers,
+	avg_selling_price,
+	-- Average order revenue
+	CASE	
+		WHEN total_orders = 0 THEN 0
+		ELSE total_sales/total_orders
+	END AS avg_revenue_order,
+	-- Average monthly revenue
+	CASE
+		WHEN lifespan = 0 THEN total_sales
+		ELSE total_sales/lifespan
+	END AS avg_monthly_revenue
+FROM new_table2
+```
 
 ## Conclusion
-This project demonstrates how SQL can be used for data cleaning, transformation, and analysis to derive valuable business insights. By leveraging SQL techniques, we have uncovered critical patterns in workforce layoffs over a three-year period.
-
-The insights gained from this analysis can be used by businesses, policymakers, and researchers to understand employment trends and prepare for future workforce challenges.
-
-## Files
-[Download Layoffs Dataset](https://github.com/movahed-abdolahi/SQL-projects/Files/layoffs.csv)
-
-[SQL Cleaning Script](https://github.com/movahed-abdolahi/SQL-projects/Files/SQL-Project-Data%20cleaning.sql)
-
-[SQL Analysis Script](https://github.com/movahed-abdolahi/SQL-projects/Files/SQL-Project-Data%20analyzing.sql)
-
+SQL techniques such as CTEs, JOINs, CASE statements, window functions (OVER(), LAG()), and subqueries were extensively applied throughout the analysis to manipulate and aggregate the data effectively. The insights derived from these methods provide significant value in optimizing product offerings, refining marketing strategies, and enhancing customer engagement. This project demonstrates the power of SQL and data-driven decision-making in the retail industry, enabling more informed and strategic business actions.
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
-
 ---
-### Author
-**Movahed Abdolahi**
-
 For any questions or collaborations, feel free to reach out!
 
