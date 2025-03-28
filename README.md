@@ -1,7 +1,7 @@
 # Retail-database-SQL-EDA
 Sale analysis project showcasing advanced SQL skills
 
-# 1: Retail Sales Analysis
+#  Retail Sales Analysis
 ## Overview
 This project analyzes data from a retailer. I have analysed sales in regards to; change over time - cumulative - products performance - part to whole to identify winning products - segmenting customers for their buying behaviors.
 I have used SQL, to analyze data to extract meaningful insights and monitor KPIs.
