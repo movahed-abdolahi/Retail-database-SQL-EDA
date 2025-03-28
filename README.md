@@ -84,7 +84,7 @@ GROUP BY DATETRUNC(month, order_date)
 ) t
 ```
 
-- **Performance Analysis**:
+### 3. **Performance Analysis**
 I have calculated yearly performance of each product. By utilizing `CTE`'s and `CASE` statements and `LAG` function, I have categorized each producs performance in 3 categories of `Above Average`, `Below Average` and `Average` and Year-Over-Year performance of products in 3 categories of `Increase`, `Decrease` and `No Change`.
 ```sql
 WITH yearly_product_sales AS 
@@ -120,7 +120,7 @@ SELECT
 FROM yearly_product_sales
 ```
 
-- **Part to whole**:
+### 4. **Part to whole**
 This was another interesting part of the analysis in which I calculated sale contribution of each product category compared to total sale. This Types of analysis usualy is good to identify dominant categories as well as underperforming categories.
 ```sql
 WITH total_sales_category AS
