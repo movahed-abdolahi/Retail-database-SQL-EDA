@@ -59,7 +59,8 @@ select
 from [gold.fact_sales]
 where order_date is not null
 group by DATETRUNC(month, order_date)
-order by DATETRUNC(month, order_date);```
+order by DATETRUNC(month, order_date);
+sql```
 
 
 
