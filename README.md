@@ -142,27 +142,72 @@ FROM total_sales_category
 ORDER BY total_sales_cat DESC
 ```
 
-### 3. **SQL Techniques and Functionalities Used**
-During the data cleaning and analysis process, multiple SQL functionalities were applied, including:
-- `WHERE` clause to filter specific conditions (e.g., WHERE industry='Tech').
-- `LIKE` statement for pattern matching (e.g., filtering company names containing 'Inc').
-- `GROUP BY` and `ORDER BY` for summarizing and sorting data.
-- `JOIN` and `UNION` to combine related datasets and enrich insights.
-- **String Functions**:
-   - `TRIM(column)`, `LOWER(column)`, `UPPER(column)` for text cleanup.
-- **CASE Statements**:
-   - Created new categorical insights (e.g., CASE WHEN total_layoffs > 1000 THEN 'High Impact' ELSE 'Low Impact' END).
-- **Subqueries**:
-   - Extracted specific insights using nested queries.
-- **Window Functions**:
-   - Used `RANK() OVER(PARTITION BY country ORDER BY total_layoffs DESC)` for ranking within groups.
-- **Common Table Expressions (CTEs)**:
-   - Simplified complex queries using `WITH cte_name AS (SELECT ...)`.
-- **Temporary Tables**:
-   - Created intermediate datasets using `CREATE TEMP TABLE`.
+### 5. **Segmentation**
+In segmentation I have tried to categorize customers into 3 segment:
+	- VIP: At least 12 months of history and spending more than 5000 
+ 	- Regular: At least 12 months of history and spending less than 5000 
+  	- New: less than 12 month of history
+
+```sql
+WITH customer_spending AS
+(
+SELECT
+	c.customer_key,
+	SUM(f.sales_amount) total_spending,
+	MIN(order_date) first_order,
+	MAX(order_date) last_order,
+	DATEDIFF(MONTH,MIN(order_date),MAX(order_date)) order_history
+FROM [gold.fact_sales] f
+JOIN [gold.dim_customers] c
+	ON f.customer_key = c.customer_key
+GROUP BY c.customer_key
+)
+
+SELECT
+	customer_category,
+	COUNT(customer_key) AS total_customers
+FROM
+(
+SELECT 
+	customer_key,
+	CASE	
+		WHEN order_history >= 12 AND total_spending > 5000 THEN 'VIP'
+		WHEN order_history >= 12 AND total_spending <= 5000 THEN 'Regular'
+		ELSE 'New'
+	END customer_category
+FROM customer_spending
+) t
+GROUP BY customer_category
+ORDER BY total_customers DESC
+```
+
+And also products in 4 segment based on their COGS.
+```sql
+ WITH product_category AS
+ (
+ SELECT 
+	product_key,
+	product_name,
+	cost,
+	CASE
+		WHEN cost < 100 THEN '0  to 100'
+		WHEN cost BETWEEN 100 AND 500 THEN '100  to 500'
+		WHEN cost BETWEEN 500 AND 1000 THEN '500  to 1000'
+		ELSE 'Above 1000'
+	END cost_category
+ FROM [gold.dim_products] 
+ )
+SELECT 
+	cost_category,
+	COUNT(product_name) AS total_product
+FROM product_category
+GROUP BY cost_category
+```
 
 ## Key Insights and Findings
 After analyzing the dataset, several important trends were uncovered:
+
+A
 
 - **Layoffs peaked in 2020 and 2022**, aligning with major economic downturns and market corrections.
 - **The tech industry was the most affected**, with large layoffs in major companies.
