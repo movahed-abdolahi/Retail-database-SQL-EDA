@@ -50,6 +50,7 @@ products table:
 Various SQL functionalities were utilized to extract valuable insights through the analysis stages. 
 
 ### 1. **Change Over time**
+In calculating change over time, I hve used DATETRUNK 
 ```sql
 select
 	DATETRUNC(month, order_date) AS 'Order_date',
